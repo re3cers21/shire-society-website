@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shire Society | Season 2 Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Augusta Green & Gold -->
+    <!-- Application Structure Plan: The application uses a three-tab structure: "Schedule," "Partnership Matrix," and "Matchup Frequency." The new "Matchup Frequency" tab contains a global heatmap showing head-to-head counts for all players. This structure logically separates the core schedule, the partnership analysis, and the new global opponent analysis into distinct, easy-to-navigate views. -->
+    <!-- Visualization & Content Choices: 
+        - Tab Navigation (Interaction): Buttons toggle between the three primary content views.
+        - Full Schedule (Organize): Resides in the "Schedule" tab.
+        - Partnership Matrix (Relationships): An HTML table matrix is in the "Partnership Matrix" tab.
+        - Individual Opponent Chart (Compare): The bar chart appears in the "Partnership Matrix" tab when a player is selected.
+        - Global Matchup Frequency (Compare/Relationships): A heatmap (using Chart.js with the chartjs-chart-matrix plugin) is added to the new "Matchup Frequency" tab. This is the most effective visualization for displaying the density of matchups across all players simultaneously.
+        - All choices are implemented using HTML/CSS/JS and Chart.js libraries, adhering to the no-SVG/Mermaid constraint. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #0c1f0e;
+            background-image: linear-gradient(rgba(12, 31, 14, 0.92), rgba(12, 31, 14, 0.92)), url(https://images.unsplash.com/photo-1622428051717-d57838b03943?q=80&w=2832&auto=format&fit=crop);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #f0fdf4;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 280px;
+            max-height: 300px;
+        }
+        .chart-container-large {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 500px;
+            max-height: 600px;
+        }
+        .week-btn {
+            background-color: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .week-btn.active {
+            background-color: #d4af37;
+            color: #0c1f0e;
+            font-weight: 700;
+            transform: scale(1.05);
+            border-color: #d4af37;
+        }
+        .match-card.highlight {
+            border-color: #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+        .week-container.highlight {
+            outline: 3px solid #d4af37;
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #374151;
+            padding: 0.5rem;
+            text-align: center;
+            min-width: 50px;
+            transition: background-color 0.3s;
+        }
+        .matrix-table th {
+            background-color: rgba(255,255,255,0.05);
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #d1d5db;
+        }
+        .matrix-table .player-header {
+             writing-mode: vertical-rl;
+             transform: rotate(180deg);
+             white-space: nowrap;
+        }
+        .matrix-table .highlight-cell {
+            background-color: rgba(212, 175, 55, 0.2);
+        }
+        .matrix-table .self-cell {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            color: #d1d5db;
+            border-bottom: 4px solid transparent;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .nav-btn.active {
+            color: #ffffff;
+            font-weight: 700;
+            border-bottom-color: #d4af37;
+        }
+        .card {
+            background-color: rgba(12, 31, 14, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0, 0.37);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-6 py-4">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tight uppercase" style="text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);">
+                Shire Society: Season 2
+            </h1>
+            <p class="mt-3 text-lg text-gray-300">The Official 2v2 Alternate Shot Schedule</p>
+        </header>
+
+        <div id="main-nav" class="flex flex-wrap justify-center border-b-2 border-gray-700 mb-8">
+            <button data-view="schedule" class="nav-btn active">Schedule</button>
+            <button data-view="matrix" class="nav-btn">Partnership Matrix</button>
+            <button data-view="matchups" class="nav-btn">Matchup Frequency</button>
+        </div>
+
+        <main>
+            <div id="schedule-view">
+                <div class="card rounded-2xl p-4 sm:p-6 mb-8 sticky top-4 z-10">
+                    <h2 class="text-2xl font-semibold mb-4 text-white text-center">Controls</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div>
+                            <label for="player-select" class="block text-sm font-medium text-gray-300 mb-2">Highlight & Analyze Player:</label>
+                            <select id="player-select" class="w-full bg-gray-900/50 border-gray-600 text-white text-sm rounded-lg focus:ring-[#d4af37] focus:border-[#d4af37] block p-2.5 transition shadow-sm">
+                                <option selected value="all">None</option>
+                            </select>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-300 mb-2">Jump to Week:</h3>
+                            <div id="week-navigation" class="grid grid-cols-4 lg:grid-cols-7 gap-2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="schedule-content" class="space-y-10">
+                    <!-- Full schedule content will be injected here -->
+                </div>
+            </div>
+            
+            <div id="matrix-view" class="hidden">
+                 <div class="card rounded-2xl p-4 sm:p-6">
+                    <div class="text-center mb-6">
+                         <h2 class="text-3xl font-bold text-white">Partnership Matrix</h2>
+                         <p class="mt-1 text-gray-300">Shows which week players are partnered. Select a player from the controls above to highlight.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <div id="partnership-matrix-container"></div>
+                    </div>
+                </div>
+                <div id="analysis-section" class="mt-12 card rounded-2xl p-4 sm:p-6 hidden">
+                    <div id="analysis-header" class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-white">Analysis for <span id="analysis-player-name" class="text-[#d4af37]"></span></h2>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-center mb-2 text-gray-200">Opponent Frequency</h3>
+                        <p class="text-center text-sm text-gray-400 mb-4">Shows how many times players are opponents.</p>
+                        <div class="chart-container">
+                            <canvas id="opponentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="matchups-view" class="hidden">
+                <div class="card rounded-2xl p-4 sm:p-6">
+                    <div class="text-center mb-6">
+                         <h2 class="text-3xl font-bold text-white">Overall Matchup Frequency</h2>
+                         <p class="mt-1 text-gray-300">A heatmap showing how many times each player competed against another.</p>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="matchupFrequencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const players = ["Justin", "Matt", "Trevor", "Ben", "Reece", "Tyler", "Connor", "Lux"];
+        const scheduleData = [
+            { week: 1, matches: [{ t1: ["Justin", "Matt"], t2: ["Trevor", "Ben"] }, { t1: ["Reece", "Tyler"], t2: ["Connor", "Lux"] }] },
+            { week: 2, matches: [{ t1: ["Justin", "Trevor"], t2: ["Reece", "Connor"] }, { t1: ["Matt", "Ben"], t2: ["Tyler", "Lux"] }] },
+            { week: 3, matches: [{ t1: ["Justin", "Ben"], t2: ["Tyler", "Connor"] }, { t1: ["Matt", "Trevor"], t2: ["Reece", "Lux"] }] },
+            { week: 4, matches: [{ t1: ["Justin", "Reece"], t2: ["Matt", "Tyler"] }, { t1: ["Trevor", "Connor"], t2: ["Ben", "Lux"] }] },
+            { week: 5, matches: [{ t1: ["Justin", "Tyler"], t2: ["Trevor", "Lux"] }, { t1: ["Matt", "Reece"], t2: ["Ben", "Connor"] }] },
+            { week: 6, matches: [{ t1: ["Justin", "Connor"], t2: ["Ben", "Tyler"] }, { t1: ["Matt", "Lux"], t2: ["Trevor", "Reece"] }] },
+            { week: 7, matches: [{ t1: ["Justin", "Lux"], t2: ["Matt", "Connor"] }, { t1: ["Trevor", "Tyler"], t2: ["Ben", "Reece"] }] },
+        ];
+
+        let opponentChartInstance = null;
+        let matchupFrequencyChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const playerSelect = document.getElementById('player-select');
+            const weekNavContainer = document.getElementById('week-navigation');
+            const scheduleContent = document.getElementById('schedule-content');
+            const mainNav = document.getElementById('main-nav');
+
+            players.forEach(player => {
+                const option = document.createElement('option');
+                option.value = player;
+                option.textContent = player;
+                playerSelect.appendChild(option);
+            });
+
+            scheduleData.forEach(weekData => {
+                const weekBtn = document.createElement('button');
+                weekBtn.textContent = `W${weekData.week}`;
+                weekBtn.dataset.week = weekData.week;
+                weekBtn.className = 'week-btn p-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out shadow-sm';
+                weekNavContainer.appendChild(weekBtn);
+
+                const weekContainer = document.createElement('div');
+                weekContainer.id = `week-${weekData.week}`;
+                weekContainer.className = 'week-container card space-y-6 p-6 rounded-xl transition-all duration-300';
+
+                const weekHeader = document.createElement('h2');
+                weekHeader.className = 'text-3xl font-bold text-white border-b-2 border-gray-700 pb-2 flex items-center gap-3';
+                weekHeader.innerHTML = `<span style="color: #d4af37;">🏆</span> Week ${weekData.week}`;
+                weekContainer.appendChild(weekHeader);
+
+                const matchesGrid = document.createElement('div');
+                matchesGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+                
+                weekData.matches.forEach((match, index) => {
+                    const matchCard = document.createElement('div');
+                    matchCard.className = 'match-card bg-black/20 rounded-xl p-4 border-2 border-transparent transition-all duration-300 shadow-lg';
+                    matchCard.dataset.players = [...match.t1, ...match.t2].join(',');
+
+                    matchCard.innerHTML = `
+                        <h4 class="text-sm font-semibold text-gray-400 mb-3">Match ${index + 1}</h4>
+                        <div class="flex items-center justify-around text-center">
+                            <div class="w-2/5">
+                                <p class="font-semibold text-lg text-white">${match.t1[0]}</p>
+                                <p class="text-sm text-gray-500">&</p>
+                                <p class="font-semibold text-lg text-white">${match.t1[1]}</p>
+                            </div>
+                            <div class="w-1/5 text-gray-600 font-bold text-2xl">vs</div>
+                            <div class="w-2/5">
+                                <p class="font-semibold text-lg text-white">${match.t2[0]}</p>
+                                <p class="text-sm text-gray-500">&</p>
+                                <p class="font-semibold text-lg text-white">${match.t2[1]}</p>
+                            </div>
+                        </div>
+                    `;
+                    matchesGrid.appendChild(matchCard);
+                });
+                weekContainer.appendChild(matchesGrid);
+                scheduleContent.appendChild(weekContainer);
+            });
+            
+            renderPartnershipMatrix('all');
+            renderMatchupFrequencyChart();
+
+            playerSelect.addEventListener('change', (e) => handlePlayerSelection(e.target.value));
+            weekNavContainer.addEventListener('click', (e) => {
+                if(e.target.matches('.week-btn')) {
+                    jumpToWeek(e.target.dataset.week);
+                }
+            });
+            mainNav.addEventListener('click', (e) => {
+                if(e.target.matches('.nav-btn')) {
+                    showView(e.target.dataset.view);
+                }
+            });
+        });
+
+        function showView(viewName) {
+            document.getElementById('schedule-view').classList.add('hidden');
+            document.getElementById('matrix-view').classList.add('hidden');
+            document.getElementById('matchups-view').classList.add('hidden');
+            document.getElementById(viewName + '-view').classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === viewName);
+            });
+        }
+        
+        function jumpToWeek(weekNum) {
+            showView('schedule');
+            document.querySelectorAll('.week-container').forEach(el => el.classList.remove('highlight'));
+            document.querySelectorAll('.week-btn').forEach(btn => btn.classList.remove('active'));
+
+            const targetWeek = document.getElementById(`week-${weekNum}`);
+            if (targetWeek) {
+                targetWeek.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetWeek.classList.add('highlight');
+                document.querySelector(`.week-btn[data-week='${weekNum}']`).classList.add('active');
+                setTimeout(() => targetWeek.classList.remove('highlight'), 2000);
+            }
+        }
+
+        function handlePlayerSelection(selectedPlayer) {
+            const analysisSection = document.getElementById('analysis-section');
+            const analysisPlayerName = document.getElementById('analysis-player-name');
+
+            renderPartnershipMatrix(selectedPlayer);
+
+            document.querySelectorAll('.match-card').forEach(card => {
+                card.classList.remove('highlight');
+                if (selectedPlayer !== 'all' && card.dataset.players.includes(selectedPlayer)) {
+                    card.classList.add('highlight');
+                }
+            });
+
+            if (selectedPlayer === 'all') {
+                analysisSection.classList.add('hidden');
+            } else {
+                analysisSection.classList.remove('hidden');
+                analysisPlayerName.textContent = selectedPlayer;
+                updateOpponentChart(selectedPlayer);
+            }
+        }
+
+        function renderPartnershipMatrix(selectedPlayer) {
+            const container = document.getElementById('partnership-matrix-container');
+            container.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'matrix-table w-full border-collapse';
+
+            const partnershipMap = new Map();
+            scheduleData.forEach(week => {
+                week.matches.forEach(match => {
+                    const key1 = [match.t1[0], match.t1[1]].sort().join('-');
+                    partnershipMap.set(key1, week.week);
+                    const key2 = [match.t2[0], match.t2[1]].sort().join('-');
+                    partnershipMap.set(key2, week.week);
+                });
+            });
+
+            const headerRow = table.insertRow();
+            const cornerCell = document.createElement('th');
+            headerRow.appendChild(cornerCell);
+            players.forEach(p => {
+                const th = document.createElement('th');
+                th.innerHTML = `<div class="player-header">${p}</div>`;
+                headerRow.appendChild(th);
+            });
+
+            players.forEach((rowPlayer) => {
+                const row = table.insertRow();
+                const th = document.createElement('th');
+                th.textContent = rowPlayer;
+                row.appendChild(th);
+
+                players.forEach((colPlayer) => {
+                    const cell = row.insertCell();
+                    if (rowPlayer === colPlayer) {
+                        cell.classList.add('self-cell');
+                    } else {
+                        const partnershipKey = [rowPlayer, colPlayer].sort().join('-');
+                        cell.textContent = partnershipMap.get(partnershipKey) || '';
+                    }
+                    if (selectedPlayer !== 'all' && (rowPlayer === selectedPlayer || colPlayer === selectedPlayer)) {
+                        cell.classList.add('highlight-cell');
+                    }
+                });
+            });
+            container.appendChild(table);
+        }
+        
+        function updateOpponentChart(player) {
+            const opponents = {};
+            const otherPlayers = players.filter(p => p !== player);
+            otherPlayers.forEach(p => { opponents[p] = 0; });
+
+            scheduleData.forEach(week => {
+                week.matches.forEach(match => {
+                    let opponentTeam;
+                    if (match.t1.includes(player)) {
+                        opponentTeam = match.t2;
+                    } else if (match.t2.includes(player)) {
+                        opponentTeam = match.t1;
+                    }
+                    if (opponentTeam) {
+                        opponentTeam.forEach(opponent => opponents[opponent]++);
+                    }
+                });
+            });
+
+            const opponentData = {
+                labels: Object.keys(opponents),
+                datasets: [{
+                    label: 'Times as Opponent',
+                    data: Object.values(opponents),
+                    backgroundColor: 'rgba(212, 175, 55, 0.6)',
+                    borderColor: 'rgba(212, 175, 55, 1)',
+                    borderWidth: 1
+                }]
+            };
+
+            if (opponentChartInstance) opponentChartInstance.destroy();
+            opponentChartInstance = createIndividualOpponentChart('opponentChart', opponentData);
+        }
+
+        function createIndividualOpponentChart(canvasId, data) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, ticks: { stepSize: 1, color: '#d1d5db' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        y: { ticks: { font: { size: 10 }, color: '#d1d5db' }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMatchupFrequencyChart() {
+            const matchupData = [];
+            const matchups = {};
+            players.forEach(p1 => {
+                matchups[p1] = {};
+                players.forEach(p2 => {
+                    matchups[p1][p2] = 0;
+                });
+            });
+
+            scheduleData.forEach(week => {
+                week.matches.forEach(match => {
+                    match.t1.forEach(p1 => {
+                        match.t2.forEach(p2 => {
+                            matchups[p1][p2]++;
+                            matchups[p2][p1]++;
+                        });
+                    });
+                });
+            });
+
+            players.forEach(p1 => {
+                players.forEach(p2 => {
+                    if (p1 !== p2) {
+                        matchupData.push({
+                            x: p1,
+                            y: p2,
+                            v: matchups[p1][p2]
+                        });
+                    }
+                });
+            });
+
+            const ctx = document.getElementById('matchupFrequencyChart').getContext('2d');
+            if (matchupFrequencyChartInstance) matchupFrequencyChartInstance.destroy();
+            matchupFrequencyChartInstance = new Chart(ctx, {
+                type: 'matrix',
+                data: {
+                    datasets: [{
+                        label: 'Matchup Frequency',
+                        data: matchupData,
+                        backgroundColor(ctx) {
+                            const value = ctx.dataset.data[ctx.dataIndex].v;
+                            const alpha = (value) / 4 + 0.1;
+                            return `rgba(212, 175, 55, ${alpha})`;
+                        },
+                        borderColor(ctx) {
+                            const value = ctx.dataset.data[ctx.dataIndex].v;
+                            const alpha = (value) / 4 + 0.1;
+                            return `rgba(212, 175, 55, ${alpha + 0.3})`;
+                        },
+                        borderWidth: 1,
+                        width: ({chart}) => (chart.chartArea || {}).width / players.length - 1,
+                        height: ({chart}) => (chart.chartArea || {}).height / players.length - 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: false,
+                        tooltip: {
+                            callbacks: {
+                                title() { return ''; },
+                                label(context) {
+                                    const v = context.dataset.data[context.dataIndex];
+                                    return `${v.x} vs ${v.y}: ${v.v} times`;
+                                }
+                            }
+                        },
+                    },
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: players,
+                            ticks: { display: true, color: '#d1d5db' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            type: 'category',
+                            labels: players,
+                            offset: true,
+                            ticks: { display: true, color: '#d1d5db' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
