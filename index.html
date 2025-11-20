@@ -10,17 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Augusta Green & Gold -->
-    <!-- Application Structure Plan: The application uses a four-tab structure: "Schedule," "Partnership Matrix," "Matchup Frequency," and "Leaderboard." The new "Leaderboard" tab contains a dynamically sorted table of player scores. This structure provides a complete overview of the tournament, from schedules to detailed stats and live rankings. -->
-    <!-- Visualization & Content Choices: 
-        - Tab Navigation (Interaction): Buttons toggle between the four primary content views.
-        - Full Schedule (Organize): Resides in the "Schedule" tab.
-        - Partnership Matrix (Relationships): An HTML table matrix is in the "Partnership Matrix" tab.
-        - Individual Opponent Chart (Compare): The bar chart appears in the "Partnership Matrix" tab when a player is selected.
-        - Global Matchup Frequency (Compare/Relationships): A heatmap is in the "Matchup Frequency" tab.
-        - Leaderboard (Rank): A dynamically generated and sorted HTML table in the "Leaderboard" tab shows player ranks and scores based on hardcoded results.
-        - All choices are implemented using HTML/CSS/JS and Chart.js libraries, adhering to the no-SVG/Mermaid constraint. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    
     <style>
         html {
             scroll-behavior: smooth;
@@ -132,6 +122,66 @@
             font-size: 1.25rem;
             color: #d4af37;
         }
+
+        /* --- Bracket Specific Styles --- */
+        .bracket-node {
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s;
+            width: 220px;
+        }
+        .bracket-node.winner {
+            border-color: #d4af37;
+            background-color: rgba(212, 175, 55, 0.15);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+        /* Connector Lines using Pseudo Elements */
+        .bracket-match-group {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-right: 40px; /* Space for lines */
+        }
+        .bracket-line-up::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            height: 50%;
+            width: 20px;
+            border-right: 2px solid #6b7280;
+            border-top: 2px solid #6b7280;
+            border-top-right-radius: 8px;
+        }
+        .bracket-line-down::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: 0;
+            height: 50%;
+            width: 20px;
+            border-right: 2px solid #6b7280;
+            border-bottom: 2px solid #6b7280;
+            border-bottom-right-radius: 8px;
+        }
+        .bracket-final-connector::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background-color: #6b7280;
+        }
+        .champion-trophy {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -146,6 +196,7 @@
 
         <div id="main-nav" class="flex flex-wrap justify-center border-b-2 border-gray-700 mb-8">
             <button data-view="schedule" class="nav-btn active">Schedule</button>
+            <button data-view="tournament" class="nav-btn">Tournament</button>
             <button data-view="leaderboard" class="nav-btn">Leaderboard</button>
             <button data-view="matrix" class="nav-btn">Partnership Matrix</button>
             <button data-view="matchups" class="nav-btn">Matchup Frequency</button>
@@ -171,7 +222,20 @@
                 </div>
 
                 <div id="schedule-content" class="space-y-10">
-                    <!-- Full schedule content will be injected here -->
+                    </div>
+            </div>
+
+            <div id="tournament-view" class="hidden">
+                <div class="card rounded-2xl p-6">
+                    <div class="text-center mb-10">
+                         <h2 class="text-3xl font-bold text-white">End of Season Tournament</h2>
+                         <p class="mt-1 text-gray-300">The top 8 players compete in 2v2 teams for the championship.</p>
+                    </div>
+                    
+                    <div class="overflow-x-auto pb-8">
+                        <div class="min-w-[800px] flex justify-center items-center gap-4" id="bracket-container">
+                            </div>
+                    </div>
                 </div>
             </div>
 
@@ -182,8 +246,7 @@
                          <p class="mt-1 text-gray-300">Live standings for Season 2. One point awarded per match win.</p>
                     </div>
                     <div id="leaderboard-container" class="overflow-x-auto">
-                        <!-- Leaderboard table will be injected here -->
-                    </div>
+                        </div>
                 </div>
             </div>
             
@@ -241,36 +304,45 @@
         // =================================================================================
         // LEADERBOARD RESULTS - EDIT THIS SECTION
         // =================================================================================
-        // =================================================================================
-        // For each week, specify the winner of each match.
-        // Use 't1' if the first team in the schedule won, or 't2' if the second team won.
-        // If a week hasn't been played yet, you can leave the winners as empty strings ('').
-        //
-        // Example for Week 1, Match 1:
-        // scheduleData[0].matches[0].t1 is ["Justin", "Matt"]
-        // scheduleData[0].matches[0].t2 is ["Trevor", "Ben"]
-        // If Justin & Matt won, you would set match1_winner to 't1'.
-        //
         const weeklyResults = [
-            // Week 1 Results
             { week: 1, match1_winner: 't2', match2_winner: 't1' }, 
-            // Week 2 Results
             { week: 2, match1_winner: 't1', match2_winner: 't1' },
-            // Week 3 Results
             { week: 3, match1_winner: 't1', match2_winner: 't1' },
-            // Week 4 Results - Not played yet
             { week: 4, match1_winner: 't2', match2_winner: 't1' },
-            // Week 5 Results - Not played yet
             { week: 5, match1_winner: 't2', match2_winner: 't1' },
-            // Week 6 Results - Not played yet
             { week: 6, match1_winner: 't2', match2_winner: 't2' },
-            // Week 7 Results - Not played yet
             { week: 7, match1_winner: 't1', match2_winner: 't2' },
         ];
+
         // =================================================================================
+        // TOURNAMENT CONFIGURATION - EDIT THIS SECTION
         // =================================================================================
-        // END OF EDITABLE RESULTS SECTION
+        // Define the 4 teams (Team Name and the 2 players).
+        // Then set the winner for each match.
+        // Winner Options: null (not played), 1 (Team 1 wins), 2 (Team 2 wins)
         // =================================================================================
+        
+        const tournamentConfig = {
+            // MATCH 1 (Semi-Final Top)
+            match1: {
+                team1: { name: "Team Alpha", players: ["Player A", "Player B"] }, // EDIT PLAYERS HERE
+                team2: { name: "Team Beta", players: ["Player C", "Player D"] },  // EDIT PLAYERS HERE
+                winner: null // Set to 1 or 2 when played
+            },
+            // MATCH 2 (Semi-Final Bottom)
+            match2: {
+                team1: { name: "Team Gamma", players: ["Player E", "Player F"] }, // EDIT PLAYERS HERE
+                team2: { name: "Team Delta", players: ["Player G", "Player H"] }, // EDIT PLAYERS HERE
+                winner: null // Set to 1 or 2 when played
+            },
+            // FINAL MATCH
+            // Teams are automatically filled based on winners above
+            final: {
+                winner: null // Set to 1 (Match 1 Winner) or 2 (Match 2 Winner)
+            }
+        };
+        // =================================================================================
+        // END EDITABLE SECTIONS
         // =================================================================================
 
 
@@ -290,6 +362,7 @@
                 playerSelect.appendChild(option);
             });
 
+            // Render Schedule
             scheduleData.forEach(weekData => {
                 const weekBtn = document.createElement('button');
                 weekBtn.textContent = `W${weekData.week}`;
@@ -339,6 +412,7 @@
             renderPartnershipMatrix('all');
             renderMatchupFrequencyChart();
             renderLeaderboard();
+            renderTournament();
 
             playerSelect.addEventListener('change', (e) => handlePlayerSelection(e.target.value));
             weekNavContainer.addEventListener('click', (e) => {
@@ -354,11 +428,15 @@
         });
 
         function showView(viewName) {
-            document.getElementById('schedule-view').classList.add('hidden');
-            document.getElementById('matrix-view').classList.add('hidden');
-            document.getElementById('matchups-view').classList.add('hidden');
-            document.getElementById('leaderboard-view').classList.add('hidden');
-            document.getElementById(viewName + '-view').classList.remove('hidden');
+            // Hide all views
+            ['schedule', 'matrix', 'matchups', 'leaderboard', 'tournament'].forEach(view => {
+                const el = document.getElementById(view + '-view');
+                if(el) el.classList.add('hidden');
+            });
+
+            // Show selected view
+            const targetView = document.getElementById(viewName + '-view');
+            if(targetView) targetView.classList.remove('hidden');
 
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.view === viewName);
@@ -400,6 +478,94 @@
                 updateOpponentChart(selectedPlayer);
             }
         }
+
+        // --- TOURNAMENT RENDER LOGIC ---
+        function renderTournament() {
+            const container = document.getElementById('bracket-container');
+            
+            // Helper to create team HTML
+            const createNode = (teamName, players, isWinner, isPlaceholder) => {
+                let statusClass = isWinner ? 'winner' : 'border-gray-600';
+                let textColor = isWinner ? 'text-[#d4af37]' : 'text-white';
+                if(isPlaceholder) textColor = 'text-gray-500';
+
+                return `
+                    <div class="bracket-node ${statusClass} mb-2">
+                        <div class="font-bold text-sm uppercase tracking-wider ${textColor} mb-1">${teamName}</div>
+                        <div class="text-xs text-gray-400">${players.join(' & ')}</div>
+                    </div>
+                `;
+            };
+
+            // Determine Semi Final Results
+            const m1 = tournamentConfig.match1;
+            const m2 = tournamentConfig.match2;
+            
+            // Determine Finalists
+            let fTeam1 = { name: "TBD", players: ["?", "?"] };
+            let fTeam2 = { name: "TBD", players: ["?", "?"] };
+            let fTeam1_Winner = false;
+            let fTeam2_Winner = false;
+
+            if(m1.winner === 1) fTeam1 = m1.team1;
+            if(m1.winner === 2) fTeam1 = m1.team2;
+            
+            if(m2.winner === 1) fTeam2 = m2.team1;
+            if(m2.winner === 2) fTeam2 = m2.team2;
+
+            // Determine Champion
+            let champion = { name: "Champion", players: [] };
+            if(tournamentConfig.final.winner === 1 && m1.winner) champion = fTeam1;
+            if(tournamentConfig.final.winner === 2 && m2.winner) champion = fTeam2;
+
+            if(tournamentConfig.final.winner === 1) fTeam1_Winner = true;
+            if(tournamentConfig.final.winner === 2) fTeam2_Winner = true;
+
+            // HTML Structure
+            const html = `
+                <div class="flex flex-col justify-around h-[400px]">
+                    <div class="bracket-match-group bracket-line-up">
+                        <div class="text-center text-xs text-gray-500 mb-1">SEMI FINAL 1</div>
+                        ${createNode(m1.team1.name, m1.team1.players, m1.winner === 1, false)}
+                        ${createNode(m1.team2.name, m1.team2.players, m1.winner === 2, false)}
+                    </div>
+
+                    <div class="bracket-match-group bracket-line-down">
+                         <div class="text-center text-xs text-gray-500 mb-1">SEMI FINAL 2</div>
+                        ${createNode(m2.team1.name, m2.team1.players, m2.winner === 1, false)}
+                        ${createNode(m2.team2.name, m2.team2.players, m2.winner === 2, false)}
+                    </div>
+                </div>
+
+                <div class="flex flex-col justify-center h-[400px] mx-4">
+                    <div class="bracket-match-group bracket-final-connector">
+                        <div class="text-center text-xs text-[#d4af37] font-bold mb-2">CHAMPIONSHIP</div>
+                        ${createNode(fTeam1.name, fTeam1.players, fTeam1_Winner, fTeam1.name === 'TBD')}
+                        <div class="text-center text-gray-500 text-xs my-1">VS</div>
+                        ${createNode(fTeam2.name, fTeam2.players, fTeam2_Winner, fTeam2.name === 'TBD')}
+                    </div>
+                </div>
+
+                <div class="flex flex-col justify-center items-center h-[400px] pl-8">
+                    ${champion.players.length > 0 ? `
+                        <div class="text-center animate-pulse">
+                            <div class="champion-trophy">🏆</div>
+                            <h3 class="text-2xl font-extrabold text-[#d4af37]">${champion.name}</h3>
+                            <p class="text-white mt-2">${champion.players.join(' & ')}</p>
+                        </div>
+                    ` : `
+                        <div class="text-center opacity-30">
+                            <div class="champion-trophy">🏆</div>
+                            <h3 class="text-xl font-bold text-gray-400">Waiting for Results</h3>
+                        </div>
+                    `}
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // --- EXISTING FUNCTIONS ---
 
         function renderPartnershipMatrix(selectedPlayer) {
             const container = document.getElementById('partnership-matrix-container');
