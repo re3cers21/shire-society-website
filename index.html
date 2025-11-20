@@ -123,128 +123,65 @@
             color: #d4af37;
         }
 
-        /* --- New 4-Team Bracket Specific Styles --- */
-        .bracket-container {
-            display: flex;
-            flex-direction: column; /* Stacking semi-finals on top of each other */
-            justify-content: center;
-            align-items: center;
-            min-width: 900px; 
-            padding: 2rem;
-            height: 450px; 
-        }
-
-        .bracket-round {
-            display: flex;
-            flex-direction: row; /* Rounds laid out horizontally */
-            justify-content: center;
-            align-items: center;
-        }
-        .bracket-round.round-1 {
-            margin-bottom: 1.5rem; /* Space between semi-finals and final */
-        }
-
-        .bracket-match {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            margin: 0 2rem; /* Space between matches */
-        }
-
+        /* --- Bracket Specific Styles --- */
         .bracket-node {
+            position: relative;
             background-color: rgba(0, 0, 0, 0.3);
-            border: 2px solid #4b5563; 
-            border-radius: 0.75rem; 
-            padding: 1rem; 
-            width: 250px; 
-            margin-bottom: 0.5rem; 
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s;
+            width: 220px;
         }
         .bracket-node.winner {
             border-color: #d4af37;
             background-color: rgba(212, 175, 55, 0.15);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); 
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
         }
-        .bracket-node .team-name {
-            font-size: 1.25rem; 
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.25rem;
+        /* Connector Lines using Pseudo Elements */
+        .bracket-match-group {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-right: 40px; /* Space for lines */
         }
-        .bracket-node .player-names {
-            font-size: 0.9rem; 
-            color: #a0a0a0;
-        }
-        .bracket-node.placeholder .team-name,
-        .bracket-node.placeholder .player-names {
-            color: #6b7280;
-        }
-
-        /* --- Lines for 4-Team Bracket --- */
-        
-        /* Line coming down from Semi-Final 1 */
-        .bracket-match.match-1::after {
+        .bracket-line-up::after {
             content: '';
             position: absolute;
-            width: 2px;
-            height: 40px; 
-            background-color: #6b7280;
-            bottom: -42px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
+            right: -20px;
+            top: 50%;
+            height: 50%;
+            width: 20px;
+            border-right: 2px solid #6b7280;
+            border-top: 2px solid #6b7280;
+            border-top-right-radius: 8px;
         }
-         /* Line coming down from Semi-Final 2 */
-        .bracket-match.match-2::after {
+        .bracket-line-down::after {
             content: '';
             position: absolute;
-            width: 2px;
-            height: 40px; 
-            background-color: #6b7280;
-            bottom: -42px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
+            right: -20px;
+            top: 0;
+            height: 50%;
+            width: 20px;
+            border-right: 2px solid #6b7280;
+            border-bottom: 2px solid #6b7280;
+            border-bottom-right-radius: 8px;
         }
-
-        /* Horizontal line connecting two semi-final lines */
-        .bracket-round.round-1::after {
+        .bracket-final-connector::before {
             content: '';
             position: absolute;
-            width: calc(100% - 200px); 
-            height: 2px;
-            background-color: #6b7280;
-            bottom: 0; 
-        }
-
-        /* Final match horizontal lines (left and right) */
-        .final-match-container::before, .final-match-container::after {
-            content: '';
-            position: absolute;
+            left: -20px;
+            top: 50%;
             width: 20px;
             height: 2px;
             background-color: #6b7280;
-            top: 50%;
-            transform: translateY(-50%);
         }
-        .final-match-container::before { left: -20px; }
-        .final-match-container::after { right: -20px; }
-
-        .championship-trophy {
-            font-size: 4rem; 
-            margin-bottom: 1.5rem;
-            filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.8));
+        .champion-trophy {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
         }
-        .championship-winner-name {
-            font-size: 2.5rem; 
-            font-weight: 800;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
-        }
-        .championship-player-names {
-            font-size: 1.2rem; 
-            color: #e2e8f0;
-        }
-
     </style>
 </head>
 <body class="antialiased">
@@ -292,11 +229,11 @@
                 <div class="card rounded-2xl p-6">
                     <div class="text-center mb-10">
                          <h2 class="text-3xl font-bold text-white">End of Season Tournament</h2>
-                         <p class="mt-1 text-gray-300">The 4 teams compete for the championship title.</p>
+                         <p class="mt-1 text-gray-300">The top 8 players compete in 2v2 teams for the championship.</p>
                     </div>
                     
                     <div class="overflow-x-auto pb-8">
-                        <div class="bracket-container" id="bracket-container">
+                        <div class="min-w-[800px] flex justify-center items-center gap-4" id="bracket-container">
                             </div>
                     </div>
                 </div>
@@ -379,20 +316,23 @@
 
         // =================================================================================
         // TOURNAMENT CONFIGURATION - EDIT THIS SECTION
-        // This is the correct 4-Team, 2-Match Semi-Final configuration.
+        // =================================================================================
+        // Define the 4 teams (Team Name and the 2 players).
+        // Then set the winner for each match.
+        // Winner Options: null (not played), 1 (Team 1 wins), 2 (Team 2 wins)
         // =================================================================================
         
         const tournamentConfig = {
             // MATCH 1 (Semi-Final Top)
             match1: {
-                team1: { name: "The Goldfingers", players: ["Justin", "Tyler"] }, // EDIT PLAYERS HERE
-                team2: { name: "Green Monsters", players: ["Trevor", "Ben"] },  // EDIT PLAYERS HERE
-                winner: 1 // Set to 1 or 2 when played (1 = Team 1, 2 = Team 2)
+                team1: { name: "Team Alpha", players: ["Player A", "Player B"] }, // EDIT PLAYERS HERE
+                team2: { name: "Team Beta", players: ["Player C", "Player D"] },  // EDIT PLAYERS HERE
+                winner: null // Set to 1 or 2 when played
             },
             // MATCH 2 (Semi-Final Bottom)
             match2: {
-                team1: { name: "Shire Sharks", players: ["Matt", "Reece"] }, // EDIT PLAYERS HERE
-                team2: { name: "Forest Giants", players: ["Connor", "Lux"] }, // EDIT PLAYERS HERE
+                team1: { name: "Team Gamma", players: ["Player E", "Player F"] }, // EDIT PLAYERS HERE
+                team2: { name: "Team Delta", players: ["Player G", "Player H"] }, // EDIT PLAYERS HERE
                 winner: null // Set to 1 or 2 when played
             },
             // FINAL MATCH
@@ -539,90 +479,84 @@
             }
         }
 
-        // --- CORRECTED 4-TEAM TOURNAMENT RENDER LOGIC ---
+        // --- TOURNAMENT RENDER LOGIC ---
         function renderTournament() {
             const container = document.getElementById('bracket-container');
-            container.innerHTML = ''; 
-
+            
             // Helper to create team HTML
-            const createNode = (teamData, winnerFlag, isPlaceholder) => {
-                let statusClass = winnerFlag ? 'winner' : '';
-                let teamNameClass = winnerFlag ? 'text-[#d4af37]' : 'text-white';
-                if(isPlaceholder) teamNameClass = 'text-gray-500';
+            const createNode = (teamName, players, isWinner, isPlaceholder) => {
+                let statusClass = isWinner ? 'winner' : 'border-gray-600';
+                let textColor = isWinner ? 'text-[#d4af37]' : 'text-white';
+                if(isPlaceholder) textColor = 'text-gray-500';
 
                 return `
-                    <div class="bracket-node ${statusClass} ${isPlaceholder ? 'placeholder' : ''}">
-                        <div class="team-name ${teamNameClass}">${teamData.name}</div>
-                        <div class="player-names">${teamData.players.join(' & ')}</div>
+                    <div class="bracket-node ${statusClass} mb-2">
+                        <div class="font-bold text-sm uppercase tracking-wider ${textColor} mb-1">${teamName}</div>
+                        <div class="text-xs text-gray-400">${players.join(' & ')}</div>
                     </div>
                 `;
             };
 
+            // Determine Semi Final Results
             const m1 = tournamentConfig.match1;
             const m2 = tournamentConfig.match2;
             
             // Determine Finalists
-            let finalTeam1 = { name: "TBD", players: ["?", "?"] };
-            let finalTeam2 = { name: "TBD", players: ["?", "?"] };
-            let finalTeam1_Winner = false;
-            let finalTeam2_Winner = false;
+            let fTeam1 = { name: "TBD", players: ["?", "?"] };
+            let fTeam2 = { name: "TBD", players: ["?", "?"] };
+            let fTeam1_Winner = false;
+            let fTeam2_Winner = false;
 
-            if(m1.winner === 1) finalTeam1 = m1.team1;
-            if(m1.winner === 2) finalTeam1 = m1.team2;
+            if(m1.winner === 1) fTeam1 = m1.team1;
+            if(m1.winner === 2) fTeam1 = m1.team2;
             
-            if(m2.winner === 1) finalTeam2 = m2.team1;
-            if(m2.winner === 2) finalTeam2 = m2.team2;
+            if(m2.winner === 1) fTeam2 = m2.team1;
+            if(m2.winner === 2) fTeam2 = m2.team2;
 
             // Determine Champion
             let champion = { name: "Champion", players: [] };
-            if(tournamentConfig.final.winner === 1 && finalTeam1.name !== 'TBD') champion = finalTeam1;
-            if(tournamentConfig.final.winner === 2 && finalTeam2.name !== 'TBD') champion = finalTeam2;
+            if(tournamentConfig.final.winner === 1 && m1.winner) champion = fTeam1;
+            if(tournamentConfig.final.winner === 2 && m2.winner) champion = fTeam2;
 
-            if(tournamentConfig.final.winner === 1) finalTeam1_Winner = true;
-            if(tournamentConfig.final.winner === 2) finalTeam2_Winner = true;
+            if(tournamentConfig.final.winner === 1) fTeam1_Winner = true;
+            if(tournamentConfig.final.winner === 2) fTeam2_Winner = true;
 
-            const isFinal1Placeholder = finalTeam1.name === 'TBD';
-            const isFinal2Placeholder = finalTeam2.name === 'TBD';
-
-            // Structure: Semi-Finals Row (Match 1, Match 2) -> Horizontal Separator -> Final Match -> Champion
-
+            // HTML Structure
             const html = `
-                <div class="bracket-round round-1 relative w-full justify-center">
-                    <div class="bracket-match match-1">
+                <div class="flex flex-col justify-around h-[400px]">
+                    <div class="bracket-match-group bracket-line-up">
                         <div class="text-center text-xs text-gray-500 mb-1">SEMI FINAL 1</div>
-                        ${createNode(m1.team1, m1.winner === 1, false)}
-                        ${createNode(m1.team2, m1.winner === 2, false)}
+                        ${createNode(m1.team1.name, m1.team1.players, m1.winner === 1, false)}
+                        ${createNode(m1.team2.name, m1.team2.players, m1.winner === 2, false)}
                     </div>
-                    <div class="bracket-match match-2">
-                        <div class="text-center text-xs text-gray-500 mb-1">SEMI FINAL 2</div>
-                        ${createNode(m2.team1, m2.winner === 1, false)}
-                        ${createNode(m2.team2, m2.winner === 2, false)}
+
+                    <div class="bracket-match-group bracket-line-down">
+                         <div class="text-center text-xs text-gray-500 mb-1">SEMI FINAL 2</div>
+                        ${createNode(m2.team1.name, m2.team1.players, m2.winner === 1, false)}
+                        ${createNode(m2.team2.name, m2.team2.players, m2.winner === 2, false)}
                     </div>
                 </div>
 
-                <div class="bracket-round round-final w-full justify-center mt-10">
-                    <div class="bracket-match relative flex flex-row items-center justify-center">
-                        <div class="final-match-container relative p-4 rounded-xl bg-black/20">
-                            <div class="text-center text-xs text-[#d4af37] font-bold mb-3">CHAMPIONSHIP</div>
-                            ${createNode(finalTeam1, finalTeam1_Winner, isFinal1Placeholder)}
-                            <div class="text-center text-gray-500 text-sm my-2 font-bold">VS</div>
-                            ${createNode(finalTeam2, finalTeam2_Winner, isFinal2Placeholder)}
-                        </div>
+                <div class="flex flex-col justify-center h-[400px] mx-4">
+                    <div class="bracket-match-group bracket-final-connector">
+                        <div class="text-center text-xs text-[#d4af37] font-bold mb-2">CHAMPIONSHIP</div>
+                        ${createNode(fTeam1.name, fTeam1.players, fTeam1_Winner, fTeam1.name === 'TBD')}
+                        <div class="text-center text-gray-500 text-xs my-1">VS</div>
+                        ${createNode(fTeam2.name, fTeam2.players, fTeam2_Winner, fTeam2.name === 'TBD')}
                     </div>
                 </div>
 
-                <div class="text-center mt-12 pt-4 border-t-2 border-gray-700 w-full">
-                    <h4 class="text-xl font-semibold text-white mb-4">TOURNAMENT CHAMPION</h4>
+                <div class="flex flex-col justify-center items-center h-[400px] pl-8">
                     ${champion.players.length > 0 ? `
                         <div class="text-center animate-pulse">
-                            <div class="championship-trophy">🏆</div>
-                            <h3 class="championship-winner-name text-[#d4af37]">${champion.name}</h3>
-                            <p class="championship-player-names text-white mt-2">${champion.players.join(' & ')}</p>
+                            <div class="champion-trophy">🏆</div>
+                            <h3 class="text-2xl font-extrabold text-[#d4af37]">${champion.name}</h3>
+                            <p class="text-white mt-2">${champion.players.join(' & ')}</p>
                         </div>
                     ` : `
                         <div class="text-center opacity-30">
-                            <div class="championship-trophy">❓</div>
-                            <h3 class="text-2xl font-bold text-gray-400">TBD</h3>
+                            <div class="champion-trophy">🏆</div>
+                            <h3 class="text-xl font-bold text-gray-400">Waiting for Results</h3>
                         </div>
                     `}
                 </div>
@@ -631,7 +565,7 @@
             container.innerHTML = html;
         }
 
-        // --- EXISTING FUNCTIONS (Unchanged) ---
+        // --- EXISTING FUNCTIONS ---
 
         function renderPartnershipMatrix(selectedPlayer) {
             const container = document.getElementById('partnership-matrix-container');
